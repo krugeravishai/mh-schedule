@@ -7,30 +7,33 @@ function updateClock() {
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const seconds = now.getSeconds().toString().padStart(2, '0');
-    
     // Get Hebrew Date
-    const hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-        day: 'numeric',
-        month: 'long'
-    }).format(now);
+let hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+    day: 'numeric',
+    month: 'long'
+}).format(now);
 
-    const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-        weekday: 'long'
-    }).format(now);
+// Remove the "ב" prefix before the month name
+hebrewDate = hebrewDate.replace('ב', '');
 
-    // Convert numbers in Hebrew date to Gematria with proper punctuation
-    function toGematria(num) {
-        const letters = ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
-                         "י׳", 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
-                         "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
-                         "ל׳", 'ל"א', 'ל"ב']; // Using Hebrew punctuation conventions
-        return num <= 32 ? letters[num] : num;
-    }
+// Get Hebrew Day
+const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+    weekday: 'long'
+}).format(now);
 
-    const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
-    
-    // Update clock display
-    clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes}:${seconds} - ${hebrewDay}`;
+// Convert numbers in Hebrew date to Gematria with proper punctuation
+function toGematria(num) {
+    const letters = ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
+                     "י׳", 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
+                     "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
+                     "ל׳", 'ל"א', 'ל"ב']; // Using Hebrew punctuation conventions
+    return num <= 32 ? letters[num] : num;
+}
+
+const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
+
+// Update clock display
+clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes}:${seconds} - ${hebrewDay}`;
 }
 
 setInterval(updateClock, 1000);
