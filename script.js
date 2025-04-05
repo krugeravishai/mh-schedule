@@ -7,7 +7,8 @@ function updateClock() {
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const seconds = now.getSeconds().toString().padStart(2, '0');
-    // Get Hebrew Date
+    
+// Get Hebrew Date
 let hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
     day: 'numeric',
     month: 'long'
@@ -113,7 +114,7 @@ async function readSchedule() {
 }
 
 let lastCurrentPeriod = null;  // Track the last current period for comparison
-
+let lastScheduleDay = new Date().getDay(); //Track the last day to compare and update day if needed
 // Function to load the schedule initially
 async function loadSchedule() {
     const { headers, filteredSchedule } = await readSchedule();
@@ -240,4 +241,14 @@ async function updateSchedule() {
 }
 
 loadSchedule();
-setInterval(updateSchedule, 1000);
+setInterval(async () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+
+    if (currentDay !== lastScheduleDay) {
+        lastScheduleDay = currentDay;
+        await loadSchedule(); // Reload schedule for the new day
+    }
+
+    updateSchedule();
+}, 1000);
