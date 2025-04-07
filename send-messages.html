@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="yeshiva-logo.png" type="image/png">    
+
+  <title>שליחת הודעות</title>
+  <style>
+    
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      padding-top: 0%;
+      background-color: #f5f5f5;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+    }
+
+    textarea, select, input[type="datetime-local"] {
+      width: 100%;
+      font-size: 16px;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 25px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196f3;
+      color: white;
+      cursor: pointer;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 8px 12px;
+      margin-top: 8px;
+      border-radius: 20px;
+      cursor: pointer;
+      background-color: #ccc;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>שליחת הודעות למסך בבית המדרש
+  </h1>
+
+  <label>טקסט ההודעה:
+    <textarea id="text" rows="4"></textarea>
+  </label>
+
+  <label>כיתה:
+    <select id="grade">
+      <option value="everyone">כולם</option>
+      <option value="1">שיעור א</option>
+      <option value="2">שיעור ב</option>
+      <option value="3">שיעור ג</option>
+      <option value="4">שיעור ד</option>
+      <option value="5">שיעור ה</option>
+      <option value="6">שיעור ו</option>
+      <option value="older">בוגרים</option>
+    </select>
+  </label>
+
+  <label>שעת התחלה:
+    <input type="datetime-local" id="startTime">
+  </label>
+
+  <label>שעת סיום:
+    <input type="datetime-local" id="endTime">
+  </label>
+
+  <label>הודעה שקטה:
+    <div id="silentToggle" class="chip">לא שקט</div>
+    <input type="hidden" id="silent" value="false" />
+  </label>
+
+  <button id="sendButton">שלח הודעה</button>
+
+  <script type="module" src="send-messages.js"></script>
+</body>
+</html>
