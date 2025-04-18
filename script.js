@@ -1,3 +1,25 @@
+//updating the text at the top of the screen
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
+  authDomain: "schedule-mh.firebaseapp.com",
+  projectId: "schedule-mh",
+  storageBucket: "schedule-mh.appspot.com",
+  messagingSenderId: "950949574717",
+  appId: "1:950949574717:web:6cc6dfe51ef405e3cf5254"
+};
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const topTextRef = ref(db, "topText");
+onValue(topTextRef, snapshot => {
+  if (snapshot.exists()) {
+    document.getElementById("top-text").textContent = snapshot.val();
+  }
+});
+
+
 // Function to update the clock
 function updateClock() {
     const clockElement = document.getElementById("clock");
@@ -25,9 +47,9 @@ const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
 // Convert numbers in Hebrew date to Gematria with proper punctuation
 function toGematria(num) {
     const letters = ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
-                     "י׳", 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
+                     "י׳", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
                      "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
-                     "ל׳", 'ל"א', 'ל"ב']; // Using Hebrew punctuation conventions
+                     "ל׳", 'ל"א']; // Using Hebrew punctuation conventions
     return num <= 32 ? letters[num] : num;
 }
 
@@ -42,7 +64,7 @@ updateClock(); // Run immediately
 
 
 // Function to update the background image without flickering
-const totalImages = 13;
+const totalImages = 13; //TODO: This needs to be updates when images are added. Or I need to make a better way to get the photos.
 let imageIndex = Math.floor(Math.random() * totalImages) + 1;
 let nextImage = new Image(); // Preload container
 
@@ -102,7 +124,7 @@ async function readSchedule() {
 
         let filteredSchedule = [];
         schedule.forEach(({ "שעה": time, ...classes }) => {
-            const classData = [time, ...grades.map(grade => classes[grade] || "N/A")];
+            const classData = [time, ...grades.map(grade => classes[grade] || "")];
             filteredSchedule.push(classData);
         });
 
@@ -241,6 +263,7 @@ async function updateSchedule() {
 }
 
 loadSchedule();
+
 setInterval(async () => {
     const now = new Date();
     const currentDay = now.getDay();
