@@ -1,6 +1,12 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  remove
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
   authDomain: "schedule-mh.firebaseapp.com",
@@ -10,138 +16,115 @@ const firebaseConfig = {
   appId: "1:950949574717:web:6cc6dfe51ef405e3cf5254"
 };
 
+// Initialize Firebase
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const messagesRef = ref(db, "messages");
 
-import { get, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-
-const loadedMessageKeys = new Set();
-
-// DOM reference for message bar
+// DOM references
 const messageBar = document.getElementById("message-bar");
-export async function loadMessages() {
-  const snapshot = await get(messagesRef);
-  const now = new Date();
 
-  if (!snapshot.exists()) return;
+// Local state
+const displayedMessages = new Map(); // key -> div
+const shownFullScreenMessages = new Set(); // to prevent duplicates
 
-  const gradeLabels = {
-    "1": "שיעור א",
-    "2": "שיעור ב",
-    "3": "שיעור ג",
-    "4": "שיעור ד",
-    "5": "שיעור ה",
-    "6": "שיעור ו",
-    "older": "בוגרים",
-    "everyone": "כולם"
-  };
+// Grade labels
+const gradeLabels = {
+  "1": "שיעור א",
+  "2": "שיעור ב",
+  "3": "שיעור ג",
+  "4": "שיעור ד",
+  "5": "שיעור ה",
+  "6": "שיעור ו",
+  "older": "בוגרים",
+  "everyone": "כולם"
+};
 
-  snapshot.forEach(child => {
-    const message = child.val();
-    const key = child.key;
-
-    const start = new Date(message.startTime);
-    const end = new Date(message.endTime);
-
-    if (end < now) {
-      // Message expired, remove from database
-      remove(ref(db, `messages/${key}`));
-      return;
-    }
-
-    if (start <= now && now <= end) {
-      const div = document.createElement("div");
-      div.classList.add("message", "to-bar");
-
-      const allowedGrades = Object.keys(gradeLabels);
-      const gradeKey = allowedGrades.includes(message.grade) ? message.grade.toLowerCase() : "everyone";
-      const gradeLabel = gradeLabels[gradeKey];
-
-      div.classList.add(`grade-${gradeKey}`);
-      div.innerHTML = `<strong>${gradeLabel}: </strong><br>${message.text}`;
-
-      messageBar.appendChild(div);
-      loadedMessageKeys.add(key);
-    }
-  });
-}
-
-function addNewMessage(key, message) {
-  const now = new Date();
-  const start = new Date(message.startTime);
-  const end = new Date(message.endTime);
-
-  if (end < now || start > now) return; // Ignore expired or future messages
-
-  const gradeLabels = {
-    "1": "שיעור א",
-    "2": "שיעור ב",
-    "3": "שיעור ג",
-    "4": "שיעור ד",
-    "5": "שיעור ה",
-    "6": "שיעור ו",
-    "older": "בוגרים",
-    "everyone": "כולם"
-  };
-  
-  const allowedGrades = Object.keys(gradeLabels);
-  const gradeKey = allowedGrades.includes(message.grade) ? message.grade.toLowerCase() : "everyone";
+// Create message element
+function createMessageElement(message, key) {
+  const gradeKey = gradeLabels.hasOwnProperty(message.grade) ? message.grade : "everyone";
   const gradeLabel = gradeLabels[gradeKey];
 
-  const finalDiv = document.createElement("div");
-  finalDiv.classList.add("message", "to-bar", `grade-${gradeKey}`);
-  finalDiv.innerHTML = `<div><strong>${gradeLabel}: </strong></div><div>${message.text}</div>`;
-
-  if (!message.silent) {
-    const fullDiv = finalDiv.cloneNode(true);
-    fullDiv.classList.add("full-screen-message");
-    document.body.appendChild(fullDiv);
-  
-    setTimeout(() => {
-      document.body.removeChild(fullDiv);
-      messageBar.appendChild(finalDiv);
-    }, 6000); // 5s delay + 1s animation
-  } else {
-    messageBar.appendChild(finalDiv);
-  }  
+  const div = document.createElement("div");
+  div.classList.add("message", "to-bar", `grade-${gradeKey}`);
+  div.innerHTML = `<div><strong>${gradeLabel}:</strong></div><div>${message.text}</div>`;
+  return div;
 }
 
+// Fullscreen animation
+function showFullScreenMessage(div, key) {
+  if (shownFullScreenMessages.has(key)) return;
+  shownFullScreenMessages.add(key);
 
-export async function deleteOldMessages() {
+  const fullDiv = div.cloneNode(true);
+  fullDiv.classList.add("full-screen-message");
+  document.body.appendChild(fullDiv);
+
+  setTimeout(() => {
+    document.body.removeChild(fullDiv);
+    messageBar.appendChild(div);
+    displayedMessages.set(key, div);
+  }, 6000);
+}
+
+// Periodic scan
+async function scanMessages() {
   const snapshot = await get(messagesRef);
   const now = new Date();
 
-  if (!snapshot.exists()) return;
+  const existingKeys = new Set();
 
-  snapshot.forEach(child => {
-    const message = child.val();
-    const key = child.key;
-    const end = new Date(message.endTime);
+  if (snapshot.exists()) {
+    snapshot.forEach(child => {
+      const key = child.key;
+      const message = child.val();
+      const start = new Date(message.startTime);
+      const end = new Date(message.endTime);
 
-    if (end < now) {
-      remove(ref(db, `messages/${key}`));
-      const divs = [...messageBar.querySelectorAll(".message")];
-      divs.forEach(div => {
-        if (div.innerHTML.includes(message.text)) {
-          messageBar.removeChild(div);
+      if (end < now) {
+        // Expired — remove from DB and from DOM
+        remove(ref(db, `messages/${key}`));
+        if (displayedMessages.has(key)) {
+          const div = displayedMessages.get(key);
+          div.remove();
+          displayedMessages.delete(key);
         }
-      });
-    }
-  });
-}
+        return;
+      }
 
-loadMessages().then(() => {
-    onChildAdded(messagesRef, snapshot => {
-      const key = snapshot.key;
-      const message = snapshot.val();
-  
-      if (!loadedMessageKeys.has(key)) {
-        addNewMessage(key, message);
+      if (start <= now && now <= end) {
+        existingKeys.add(key);
+
+        const existing = displayedMessages.get(key);
+        const newHtml = createMessageElement(message, key).innerHTML;
+
+        if (!existing) {
+          const newDiv = createMessageElement(message, key);
+          if (!message.silent) {
+            showFullScreenMessage(newDiv, key);
+          } else {
+            messageBar.appendChild(newDiv);
+            displayedMessages.set(key, newDiv);
+          }
+        } else if (existing.innerHTML !== newHtml) {
+          // Message was edited
+          const updatedDiv = createMessageElement(message, key);
+          messageBar.replaceChild(updatedDiv, existing);
+          displayedMessages.set(key, updatedDiv);
+        }
       }
     });
-  });
+  }
 
-// Delete old messages every minute
-setInterval(deleteOldMessages, 60 * 1000);
+  // Clean up removed messages
+  for (const [key, div] of displayedMessages) {
+    if (!existingKeys.has(key)) {
+      div.remove();
+      displayedMessages.delete(key);
+    }
+  }
+}
+
+// Initial load and start polling
+scanMessages();
+setInterval(scanMessages, 1000);
