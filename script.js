@@ -14,9 +14,9 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const topTextRef = ref(db, "topText");
 onValue(topTextRef, snapshot => {
-  if (snapshot.exists()) {
+if (true) {
     document.getElementById("top-text").textContent = snapshot.val();
-  }
+}
 });
 
 
