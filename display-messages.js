@@ -51,6 +51,8 @@ function createMessageElement(message, key) {
   return div;
 }
 
+let initialScanDone = false;
+
 // Fullscreen animation
 function showFullScreenMessage(div, key) {
   if (shownFullScreenMessages.has(key)) return;
@@ -71,7 +73,6 @@ function showFullScreenMessage(div, key) {
 async function scanMessages() {
   const snapshot = await get(messagesRef);
   const now = new Date();
-
   const existingKeys = new Set();
 
   if (snapshot.exists()) {
@@ -82,7 +83,6 @@ async function scanMessages() {
       const end = new Date(message.endTime);
 
       if (end < now) {
-        // Expired — remove from DB and from DOM
         remove(ref(db, `messages/${key}`));
         if (displayedMessages.has(key)) {
           const div = displayedMessages.get(key);
@@ -94,20 +94,18 @@ async function scanMessages() {
 
       if (start <= now && now <= end) {
         existingKeys.add(key);
-
         const existing = displayedMessages.get(key);
         const newHtml = createMessageElement(message, key).innerHTML;
 
         if (!existing) {
           const newDiv = createMessageElement(message, key);
-          if (!message.silent) {
+          if (!message.silent && initialScanDone) {
             showFullScreenMessage(newDiv, key);
           } else {
             messageBar.appendChild(newDiv);
             displayedMessages.set(key, newDiv);
           }
         } else if (existing.innerHTML !== newHtml) {
-          // Message was edited
           const updatedDiv = createMessageElement(message, key);
           messageBar.replaceChild(updatedDiv, existing);
           displayedMessages.set(key, updatedDiv);
@@ -116,14 +114,17 @@ async function scanMessages() {
     });
   }
 
-  // Clean up removed messages
   for (const [key, div] of displayedMessages) {
     if (!existingKeys.has(key)) {
       div.remove();
       displayedMessages.delete(key);
     }
   }
+
+  // After first run
+  if (!initialScanDone) initialScanDone = true;
 }
+
 
 // Initial load and start polling
 scanMessages();
