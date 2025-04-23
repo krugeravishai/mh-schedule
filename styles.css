@@ -12,7 +12,6 @@ body {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    font-family: Arial, sans-serif;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -215,9 +214,9 @@ body::before {
 
       
 .message.grade-everyone {
-    background-color: #ff4848;
+    background-color: #155daa;
   }
-  .message.grade-1 {
+  .message.grade-1{
     background-color: #ff8848;
   }
   .message.grade-2 {
@@ -230,13 +229,13 @@ body::before {
     background-color: #48fffc;
   }
   .message.grade-5 {
-    background-color: #4848ff;
+    background-color: #ff48da;
   }
   .message.grade-6 {
     background-color: #8248ff;
   }
   .message.grade-older {
-    background-color: #ff48da;
+    background-color: #ff4848;
   }
   
 
