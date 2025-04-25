@@ -1,3 +1,7 @@
+let totalImages = 82;
+
+
+
 //updating the text at the top of the screen
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -63,28 +67,31 @@ setInterval(updateClock, 1000);
 updateClock(); // Run immediately
 
 
-// Function to update the background image without flickering
-const totalImages = 13; //TODO: This needs to be updates when images are added. Or I need to make a better way to get the photos.
-let imageIndex = Math.floor(Math.random() * totalImages) + 1;
-let nextImage = new Image(); // Preload container
 
-// Function to preload and update the background
+let imageIndex = Math.floor(Math.random() * totalImages) + 1;
+let currentLayer = 1;
+
 function preloadAndUpdateBackground() {
+    const nextImage = new Image();
     const imageUrl = `images/background (${imageIndex}).jpg`;
-    
-    nextImage.src = imageUrl; // Start loading
+    nextImage.src = imageUrl;
+
     nextImage.onload = () => {
-        document.body.style.backgroundImage = `url('${imageUrl}')`; // Only switch when loaded
-        imageIndex = (imageIndex % totalImages) + 1; // Prepare next image index
+        const nextLayer = currentLayer === 1 ? 2 : 1;
+        const currentDiv = document.getElementById(`bg${currentLayer}`);
+        const nextDiv = document.getElementById(`bg${nextLayer}`);
+
+        nextDiv.style.backgroundImage = `url('${imageUrl}')`;
+        nextDiv.style.zIndex = '-1';
+        currentDiv.style.zIndex = '-2';
+
+        currentLayer = nextLayer;
+        imageIndex = (imageIndex % totalImages) + 1;
     };
 }
 
-// Load first image immediately
 preloadAndUpdateBackground();
-
-// Change background every 10 seconds
 setInterval(preloadAndUpdateBackground, 10000);
-
 
 
 // Function to read the schedule from JSON
@@ -174,6 +181,9 @@ async function loadSchedule() {
             // Create a single centered class cell across the rest of the columns
             const classCell = document.createElement("div");
             classCell.textContent = row[1]; // The class name (all cells are the same)
+
+            //rowElement.style.boxShadow = "inset 0 -10px 10px -5px rgba(255, 255, 255, 0.2)";
+
             classCell.style.textAlign = "center";
             classCell.style.gridColumn = `1 / span ${row.length - 1}`; // Span across remaining columns
             rowElement.appendChild(classCell);
@@ -189,6 +199,13 @@ async function loadSchedule() {
                 const cell = document.createElement("div");
                 cell.textContent = cellText;
                 cell.style.textAlign = "center";
+
+                // Add border to middle cells between classes of different grades
+                if (cellIndex > 0 && cellIndex < row.length - 1) {
+                    cell.style.borderLeft = "3px solid rgba(255,255,255,0.25)";
+                }
+                cell.style.padding = "0 4px";
+
                 rowElement.appendChild(cell);
             });
         }
@@ -271,7 +288,11 @@ setInterval(async () => {
     if (currentDay !== lastScheduleDay) {
         lastScheduleDay = currentDay;
         await loadSchedule(); // Reload schedule for the new day
-    }
+    
+        // Scroll to the top after loading the new schedule
+        const scheduleContainer = document.getElementById("schedule-container");
+        scheduleContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }    
 
     updateSchedule();
 }, 1000);
