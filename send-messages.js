@@ -1,3 +1,18 @@
+// Grade labels
+const gradeLabels = {
+  "1": "שיעור א",
+  "2": "שיעור ב",
+  "3": "שיעור ג",
+  "4": "שיעור ד",
+  "5": "שיעור ה",
+  "6": "שיעור ו",
+  "older": "בוגרים",
+  "everyone": "כולם",
+
+  "2-3":"שיעור ב-ג",
+  "4-5":"שיעור ד-ה"
+};
+
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
@@ -32,7 +47,7 @@ function parseLocalDatetime(inputValue) {
 document.addEventListener("DOMContentLoaded", () => {
   const now = new Date();
   const defaultStart = getLocalDatetimeString(now);
-  const defaultEnd = getLocalDatetimeString(new Date(now.getTime() + 360000));
+  const defaultEnd = getLocalDatetimeString(new Date(now.getTime() + 3600000)); //add number of milliseconds to be the default end time
 
   document.getElementById("startTime").value = defaultStart;
   document.getElementById("endTime").value = defaultEnd;
@@ -77,16 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 import { get, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-const gradeLabels = {
-  "1": "שיעור א",
-  "2": "שיעור ב",
-  "3": "שיעור ג",
-  "4": "שיעור ד",
-  "5": "שיעור ה",
-  "6": "שיעור ו",
-  "older": "בוגרים",
-  "everyone": "כולם"
-};
 
 function createGridMessage(message, key) {
   const gradeLabel = gradeLabels[message.grade] || "כולם";
@@ -97,8 +102,13 @@ function createGridMessage(message, key) {
 
   div.innerHTML = `
     <div class="message-buttons">
-      <button onclick="editMessage('${key}')">🖉</button>
-      <button onclick="deleteMessage('${key}', this.parentElement.parentElement)">🗑️</button>
+      <button onclick="editMessage('${key}')">
+        <img src="icons/pencil.svg" alt="Edit" style="width:16px; height:16px;">
+      </button>
+
+      <button onclick="deleteMessage('${key}', this.parentElement.parentElement)">
+        <img src="icons/trash.svg" alt="Delete" style="width:16px; height:16px;">
+      </button>
     </div>
     <div class="message-grade">${gradeLabel}:</div>
     <div class="message-text">${message.text}</div>
