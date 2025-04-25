@@ -1,3 +1,18 @@
+// Grade labels
+const gradeLabels = {
+  "1": "שיעור א",
+  "2": "שיעור ב",
+  "3": "שיעור ג",
+  "4": "שיעור ד",
+  "5": "שיעור ה",
+  "6": "שיעור ו",
+  "older": "בוגרים",
+  "everyone": "כולם",
+
+  "2-3":"שיעור ב-ג",
+  "4-5":"שיעור ד-ה"
+};
+
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import {
   getDatabase,
@@ -28,17 +43,6 @@ const messageBar = document.getElementById("message-bar");
 const displayedMessages = new Map(); // key -> div
 const shownFullScreenMessages = new Set(); // to prevent duplicates
 
-// Grade labels
-const gradeLabels = {
-  "1": "שיעור א",
-  "2": "שיעור ב",
-  "3": "שיעור ג",
-  "4": "שיעור ד",
-  "5": "שיעור ה",
-  "6": "שיעור ו",
-  "older": "בוגרים",
-  "everyone": "כולם"
-};
 
 // Create message element
 function createMessageElement(message, key) {
