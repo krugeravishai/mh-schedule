@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="yeshiva-logo.png" type="image/png">    
+    <link rel="icon" href="icons/yeshiva-logo.png" type="image/png">    
     <title>שליחת הודעות</title>
     <link rel="stylesheet" href="send-messages.css">
   </head>
@@ -17,20 +17,22 @@
       <select id="grade">
         <option value="everyone">כולם</option>
         <option value="1">שיעור א</option>
-        <option value="2">שיעור ב</option>
-        <option value="3">שיעור ג</option>
+        <option value="2-3">שיעור ב-ג</option>
+        <option value="4-5">שיעור ד-ה</option>
+<!--
         <option value="4">שיעור ד</option>
         <option value="5">שיעור ה</option>
         <option value="6">שיעור ו</option>
-        <option value="older">בוגרים</option>
+        <option value="older">בוגרים</option> 
+-->
       </select>
     </label>
 
-    <label>שעת התחלה:
+    <label>שעת התחלת ההודעה:
       <input type="datetime-local" id="startTime">
     </label>
 
-    <label>שעת סיום:
+    <label>שעת סיום ההודעה:
       <input type="datetime-local" id="endTime">
     </label>
 
@@ -42,7 +44,7 @@
     <button id="sendButton">שלח הודעה</button>
 
     <h1 class="message-grid-title">הודעות המופיעות במסך:</h1>
-    <div id="messageGrid" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;"></div>
+    <div id="messageGrid" class="message-grid"></div>
 
     <div id="toast" class="toast"></div>
 
