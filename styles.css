@@ -179,7 +179,11 @@ body::before {
     font-weight: bold;
     font-size: 2.5em;
     color: white;
-    text-shadow: 0 0 2px rgba(13,27,43,255), 0 0 4px rgba(26,55,86,255), 0 0 6px rgba(26,55,86,255), 0 0 10px rgba(26,55,86,255);
+    text-shadow:
+    0 0 4px rgba(0, 123, 255, 0.8),
+    0 0 8px rgba(0, 123, 255, 0.6),
+    0 0 12px rgba(0, 123, 255, 0.4),
+    0 0 18px rgba(0, 123, 255, 0.2);
 
     overflow-y: auto;
     max-height: 300px;
