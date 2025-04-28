@@ -1,5 +1,5 @@
 let totalImages = 82;
-
+let imageTime = 20000; //how many seconds the image displays in millisecond
 
 
 //updating the text at the top of the screen
@@ -32,7 +32,7 @@ function updateClock() {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
-    const seconds = now.getSeconds().toString().padStart(2, '0');
+    //const seconds = now.getSeconds().toString().padStart(2, '0');
     
 // Get Hebrew Date
 let hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
@@ -60,7 +60,7 @@ function toGematria(num) {
 const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
 
 // Update clock display
-clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes}:${seconds} - ${hebrewDay}`;
+clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes} - ${hebrewDay}`; //:${seconds}
 }
 
 setInterval(updateClock, 1000);
@@ -91,7 +91,7 @@ function preloadAndUpdateBackground() {
 }
 
 preloadAndUpdateBackground();
-setInterval(preloadAndUpdateBackground, 10000);
+setInterval(preloadAndUpdateBackground, imageTime);
 
 
 // Function to read the schedule from JSON
