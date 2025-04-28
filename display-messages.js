@@ -51,7 +51,7 @@ function createMessageElement(message, key) {
 
   const div = document.createElement("div");
   div.classList.add("message", "to-bar", `grade-${gradeKey}`);
-  div.innerHTML = `<div><strong>${gradeLabel}:</strong></div><div>${message.text}</div>`;
+  div.innerHTML = `<div><strong>${gradeLabel}:</div><div>${message.text}</strong></div>`;
   return div;
 }
 
