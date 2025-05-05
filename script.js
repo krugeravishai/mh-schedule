@@ -2,9 +2,12 @@ let totalImages = 82;
 let imageTime = 15000; //how many seconds the image displays in millisecond
 
 
+
+
+let currentPeriod;
 //updating the text at the top of the screen
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
@@ -41,7 +44,7 @@ let hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
 }).format(now);
 
 // Remove the "ב" prefix before the month name
-hebrewDate = hebrewDate.replace('ב', '');
+hebrewDate = hebrewDate.replace('ב', ''); //todo fix this before חודש אב maybe make it replace " ב" with " " or cleaner code
 
 // Get Hebrew Day
 const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
@@ -50,10 +53,11 @@ const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
 
 // Convert numbers in Hebrew date to Gematria with proper punctuation
 function toGematria(num) {
-    const letters = ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
-                     "י׳", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
-                     "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
-                     "ל׳", 'ל"א']; // Using Hebrew punctuation conventions
+    const letters =
+    ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
+    "י׳", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
+    "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
+    "ל׳", 'ל"א']; // Using Hebrew punctuation conventions
     return num <= 32 ? letters[num] : num;
 }
 
@@ -72,6 +76,17 @@ let imageIndex = Math.floor(Math.random() * totalImages) + 1;
 let currentLayer = 1;
 
 function preloadAndUpdateBackground() {
+    const currentRow = document.querySelector(".current-class");
+    currentPeriod = currentRow?.textContent?.trim().replace(/[0-9:]/g, '');
+    console.log("Current Period: " + currentPeriod);
+
+    if (["תפילת שחרית", "תפילת מנחה", "תפילת ערבית", "שחרית", "מנחה", "ערבית"].includes(currentPeriod)) 
+    {
+        console.log("During prayer: Wont distract with new images.");
+        return; //during prayer times dont distract with images switching
+    }
+
+    console.log("Not during prayer: Will update images.");
     const nextImage = new Image();
     const imageUrl = `images/background (${imageIndex}).jpg`;
     nextImage.src = imageUrl;
@@ -91,6 +106,7 @@ function preloadAndUpdateBackground() {
 }
 preloadAndUpdateBackground();
 setInterval(preloadAndUpdateBackground, imageTime);
+
 
 // Function to read the schedule from JSON
 async function readSchedule() {
@@ -140,6 +156,7 @@ async function readSchedule() {
     }
 }
 
+
 let lastCurrentPeriod = null;  // Track the last current period for comparison
 let lastScheduleDay = new Date().getDay(); //Track the last day to compare and update day if needed
 // Function to load the schedule initially
@@ -165,20 +182,51 @@ async function loadSchedule() {
     const scheduleRows = document.getElementById("schedule-rows");
     scheduleRows.innerHTML = ""; // Clear previous rows
 
-    filteredSchedule.forEach((row, rowIndex) => {
+    for (const [rowIndex, row] of filteredSchedule.entries()) {
         // Check if all classes are identical (except the time)
+        const isSederErev = row[1].includes("סדר ערב");
         const firstClass = row.slice(1).every(cell => cell === row[1]);
+        
+        if (isSederErev) {
+            const pageRef = ref(db, "sederErev");
+        
+            onValue(pageRef, snapshot => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const today = new Date().toISOString().slice(0, 10);
+                    let currentPage = data.page;
+        
+                    if (data.lastUpdated !== today) {
+                        const newPage = nextPage(data.page);
+                        set(pageRef, { page: newPage, lastUpdated: today });
+                        currentPage = newPage;
+                        console.log("Updated the page in firebase to: " + currentPage);
+                    }
+        
+                    const rowElem = document.getElementById(`row-${rowIndex}`);
+                    if (rowElem) {
+                        rowElem.innerHTML = `
+                            <div style="grid-column: 1 / span ${row.length - 1}; text-align: center;">
+                                <span dir="rtl">סדר ערב - ${currentPage}</span>
+                            </div>
+                            <div style="grid-column: ${row.length}; text-align: center;">
+                                ${row[0]}
+                            </div>`;
+                    }
+                }
+            }, { onlyOnce: false }); // Keep listening
+        }
 
         const rowElement = document.createElement("div");
         rowElement.classList.add("schedule-row");
 
-        if (firstClass) {
+        if (firstClass) { //if the everyone has the same class
             // If all classes are the same:
             // 1. Keep the time cell in the far right column
             // 2. Center the class cell across the remaining columns
             // Create a single centered class cell across the rest of the columns
             const classCell = document.createElement("div");
-            classCell.textContent = row[1]; // The class name (all cells are the same)
+            classCell.innerHTML = row[1]; // The class name (all cells are the same)
 
             //rowElement.style.boxShadow = "inset 0 -10px 10px -5px rgba(255, 255, 255, 0.2)";
 
@@ -212,14 +260,51 @@ async function loadSchedule() {
         rowElement.id = `row-${rowIndex}`;
 
         scheduleRows.appendChild(rowElement);
-    });
+    };
 
     const fakeRow = document.createElement("div");
     fakeRow.classList.add("fake-row");
     document.getElementById("schedule-rows").appendChild(fakeRow);
 }
 
+function nextPage(current) { //takes the current gmara page and adds one עמוד and then returns it
+    const hebrewLetters = [
+        "א","ב","ג","ד","ה","ו","ז","ח","ט","י","יא","יב","יג","יד","טו","טז",
+        "יז","יח","יט","כ","כא","כב","כג","כד","כה","כו","כז","כח","כט","ל","לא",
+        "לב","לג","לד","לה","לו","לז","לח","לט","מ","מא","מב","מג","מד","מה","מו",
+        "מז","מח","מט","נ","נא","נב","נג","נד","נה","נו","נז","נח","נט","ס","סא","סב",
+        "סג","סד","סה","סו","סז","סח","סט","ע","עא","עב","עג","עד","עה","עו","עז",
+        "עח","עט","פ","פא","פב","פג","פד","פה","פו","פז","פח","פט","צ","צא","צב",
+        "צג","צד","צה","צו","צז","צח","צט","ק","קא","קב","קג","קד","קה","קו","קז",
+        "קח","קט","קי","קיא","קיב","קיג","קיד","קטו","קטז","קיז","קיח","קיט","קכ",
+        "קכא","קכב","קכג","קכד","קכה","קכו","קכז","קכח","קכט","קל","קלא","קלב","קלג",
+        "קלד","קלה","קלו","קלז","קלח","קלט","קמ","קמא","קמב","קמג","קמד","קמה","קמו",
+        "קמז","קמח","קמט","קנ","קנא","קנב","קנג","קנד","קנה","קנו","קנז","קנח","קנט",
+        "קס","קסא","קסב","קסג","קסד","קסה","קסו","קסז","קסח","קסט","קע","קעא","קעב",
+        "קעג","קעד", "קעה", "קעו","קעז", "קעח","קעט","קפ"
+    ];
 
+    console.log("length of pages: "+hebrewLetters.length)
+    const match = current.match(/^([\u0590-\u05FF]+)([.:])$/); // match letter + symbol
+    if (!match) return current;
+
+    const [_, base, symbol] = match;
+    const index = hebrewLetters.indexOf(base);
+    if (index === -1) return current;
+
+    // Alternate between . and :
+    if (symbol === ".") {
+        return `${base}:`;
+    } else {
+        if (index + 1 < hebrewLetters.length) {
+            return `${hebrewLetters[index + 1]}.`;
+        } else {
+            return current; // End of list
+        }
+    }
+}
+
+  
 
 // Function to update the current class and scroll to it
 async function updateSchedule() {
