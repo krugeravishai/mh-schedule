@@ -72,6 +72,17 @@ let imageIndex = Math.floor(Math.random() * totalImages) + 1;
 let currentLayer = 1;
 
 function preloadAndUpdateBackground() {
+    const currentRow = document.querySelector(".current-class");
+    currentPeriod = currentRow?.textContent?.trim().replace(/[0-9:]/g, '');
+    console.log("Current Period: " + currentPeriod);
+
+    if (["תפילת שחרית", "תפילת מנחה", "תפילת ערבית", "שחרית", "מנחה", "ערבית"].includes(currentPeriod)) 
+    {
+        console.log("During prayer: Wont distract with new images.");
+        return; //during prayer times dont distract with images switching
+    }
+
+    console.log("Not during prayer: Will update images.");
     const nextImage = new Image();
     const imageUrl = `images/background (${imageIndex}).jpg`;
     nextImage.src = imageUrl;
@@ -89,10 +100,8 @@ function preloadAndUpdateBackground() {
         imageIndex = (imageIndex % totalImages) + 1;
     };
 }
-
 preloadAndUpdateBackground();
 setInterval(preloadAndUpdateBackground, imageTime);
-
 
 // Function to read the schedule from JSON
 async function readSchedule() {
