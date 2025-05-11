@@ -1,16 +1,16 @@
 // Grade labels
 const gradeLabels = {
-  "1": "שיעור א",
-  "2": "שיעור ב",
-  "3": "שיעור ג",
-  "4": "שיעור ד",
-  "5": "שיעור ה",
-  "6": "שיעור ו",
-  "older": "בוגרים",
-  "everyone": "כולם",
+  "1": "שיעור א:",
+  "2": "שיעור ב:",
+  "3": "שיעור ג:",
+  "4": "שיעור ד:",
+  "5": "שיעור ה:",
+  "6": "שיעור ו:",
+  "older": "בוגרים:",
+  "everyone": "",
 
-  "2-3":"שיעור ב-ג",
-  "4-5":"שיעור ד-ה"
+  "2-3":"שיעור ב-ג:",
+  "4-5":"שיעור ד-ה:"
 };
 
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
@@ -51,7 +51,7 @@ function createMessageElement(message, key) {
 
   const div = document.createElement("div");
   div.classList.add("message", "to-bar", `grade-${gradeKey}`);
-  div.innerHTML = `<div><strong>${gradeLabel}:</div><div>${message.text}</strong></div>`;
+  div.innerHTML = `<div><strong>${gradeLabel}</div><div>${message.text}</strong></div>`;
   return div;
 }
 
