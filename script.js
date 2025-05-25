@@ -1,10 +1,20 @@
-let totalImages = 82;
+let totalImages = 99;
 let imageTime = 15000; //how many seconds the image displays in millisecond
 
 
+const latitude = 31.914352288683233;   // Place latitude
+const longitude = 34.99863056272468;  // Place longitude
 
 
 let currentPeriod;
+let now = new Date();
+//now.setHours(5);
+
+let sunTimes = SunCalc.getTimes(now, latitude, longitude);
+console.log("The current date is: " + now);
+console.log("Sunset is at: " + sunTimes.sunset);
+console.log("Sunrise is at:" + sunTimes.sunrise);
+
 //updating the text at the top of the screen
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -21,10 +31,27 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const topTextRef = ref(db, "topText");
 onValue(topTextRef, snapshot => {
-if (true) {
-    document.getElementById("top-text").textContent = snapshot.val();
-}
+    if (true) {
+        document.getElementById("top-text").textContent = snapshot.val();
+    }
 });
+
+setInterval(async () => {
+    sunTimes = SunCalc.getTimes(now, latitude, longitude);
+    console.log("The current date is: " + now);
+    console.log("Sunset is at: " + sunTimes.sunset);
+    console.log("Sunrise is at:" + sunTimes.sunrise);
+}, 1000 * 60 * 60 * 24); //every day update the new sun times
+
+// const REAL_START = Date.now(); // real time when simulation starts
+// const SIM_START = new Date();  // virtual time starts at current real time
+
+// const SPEED = 80000; // 1 real second = 12 virtual minutes → 24 hours in 2 minutes
+
+// function getSimulatedTime() {
+//     const elapsed = Date.now() - REAL_START; // milliseconds
+//     return new Date(SIM_START.getTime() + elapsed * SPEED);
+// }
 
 
 // Function to update the clock
@@ -32,39 +59,60 @@ function updateClock() {
     const clockElement = document.getElementById("clock");
     if (!clockElement) return;
 
-    const now = new Date();
+    // Format Hebrew date
+    const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+        day: 'numeric',
+        month: 'long'
+    });
+    const hebrewDayFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+        weekday: 'long'
+    });
+
+    now = new Date();
+
+    let hebrewDate = hebrewDateFormatter.format(now).replace(' ב', ' ');
+    const hebrewDay = hebrewDayFormatter.format(now);
+
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const sunriseMinutes = sunTimes.sunrise.getHours() * 60 + sunTimes.sunrise.getMinutes();
+    const sunsetMinutes = sunTimes.sunset.getHours() * 60 + sunTimes.sunset.getMinutes();
+
+    if (nowMinutes > sunsetMinutes) {
+        console.log("אור ל");
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        hebrewDate = hebrewDateFormatter.format(tomorrow).replace(' ב', ' ');
+        hebrewDate = `אור ל${hebrewDate}`;
+    } else if (nowMinutes < sunriseMinutes) {
+        hebrewDate = `אור ל${hebrewDate}`;
+    }
+
+    // Optional: Convert numbers to Hebrew gematria
+    function toGematria(num) {
+        const letters =
+            ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳",
+             "י׳", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט',
+             "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט',
+             "ל׳", 'ל"א'];
+        return num <= 32 ? letters[num] : num;
+    }
+
+    hebrewDate = hebrewDate.replace(/(\d+)/g, match => toGematria(parseInt(match)));
+
+
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
-    //const seconds = now.getSeconds().toString().padStart(2, '0');
-    
-// Get Hebrew Date
-let hebrewDate = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-    day: 'numeric',
-    month: 'long'
-}).format(now);
 
-// Remove the "ב" prefix before the month name
-hebrewDate = hebrewDate.replace('ב', ''); //todo fix this before חודש אב maybe make it replace " ב" with " " or cleaner code
+    //clockElement.innerHTML = `${hebrewDate} - ${hours}:${minutes} - ${hebrewDay}`;
 
-// Get Hebrew Day
-const hebrewDay = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-    weekday: 'long'
-}).format(now);
+    const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
 
-// Convert numbers in Hebrew date to Gematria with proper punctuation
-function toGematria(num) {
-    const letters =
-    ["", "א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ז׳", "ח׳", "ט׳", 
-    "י׳", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז', 'י"ז', 'י"ח', 'י"ט', 
-    "כ׳", 'כ"א', 'כ"ב', 'כ"ג', 'כ"ד', 'כ"ה', 'כ"ו', 'כ"ז', 'כ"ח', 'כ"ט', 
-    "ל׳", 'ל"א']; // Using Hebrew punctuation conventions
-    return num <= 32 ? letters[num] : num;
-}
+    if(now.getSeconds() === 0 && now.getMinutes() === 0){
+        console.log(hebrewDay+": "+ gematriaHebrewDate); //printing every hour the day and date to see if works right 
+    }
 
-const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
-
-// Update clock display
-clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes} - ${hebrewDay}`; //:${seconds}
+    // Update clock display
+    clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes} - ${hebrewDay}`; //:${seconds}
 }
 
 setInterval(updateClock, 1000);
@@ -78,15 +126,15 @@ let currentLayer = 1;
 function preloadAndUpdateBackground() {
     const currentRow = document.querySelector(".current-class");
     currentPeriod = currentRow?.textContent?.trim().replace(/[0-9:]/g, '');
-    console.log("Current Period: " + currentPeriod);
+    //console.log("Current Period: " + currentPeriod);
 
-    if (["תפילת שחרית", "תפילת מנחה", "תפילת ערבית", "שחרית", "מנחה", "ערבית"].includes(currentPeriod)) 
+    if (["תפילת שחרית", "תפילת מוסף","תפילת מנחה", "תפילת ערבית", "תפילת מעריב","שחרית", "מוסף", "מנחה", "ערבית", "מעריב"].includes(currentPeriod)) 
     {
-        console.log("During prayer: Wont distract with new images.");
+        //console.log("During prayer: Wont distract with new images.");
         return; //during prayer times dont distract with images switching
     }
 
-    console.log("Not during prayer: Will update images.");
+    //console.log("Not during prayer: Will update images.");
     const nextImage = new Image();
     const imageUrl = `images/background (${imageIndex}).jpg`;
     nextImage.src = imageUrl;
@@ -183,18 +231,18 @@ async function loadSchedule() {
     scheduleRows.innerHTML = ""; // Clear previous rows
 
     for (const [rowIndex, row] of filteredSchedule.entries()) {
-        // Check if all classes are identical (except the time)
+        // showing the gmara page for the seder erev
         const isSederErev = row[1].includes("סדר ערב");
         const firstClass = row.slice(1).every(cell => cell === row[1]);
         
         if (isSederErev) {
             const pageRef = ref(db, "sederErev");
-        
+            let currentPage;
             onValue(pageRef, snapshot => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     const today = new Date().toISOString().slice(0, 10);
-                    let currentPage = data.page;
+                    currentPage = data.page;
         
                     if (data.lastUpdated !== today) {
                         const newPage = nextPage(data.page);
@@ -202,6 +250,7 @@ async function loadSchedule() {
                         currentPage = newPage;
                         console.log("Updated the page in firebase to: " + currentPage);
                     }
+                    console.log("Loading page: " + currentPage);
         
                     const rowElem = document.getElementById(`row-${rowIndex}`);
                     if (rowElem) {
@@ -215,12 +264,14 @@ async function loadSchedule() {
                     }
                 }
             }, { onlyOnce: false }); // Keep listening
+            console.log("Loaded page: " + currentPage);
+            //todo maybe add a reoccuring loop that if it didnt manage to load it keeps trying till it manages
         }
 
         const rowElement = document.createElement("div");
         rowElement.classList.add("schedule-row");
 
-        if (firstClass) { //if the everyone has the same class
+        if (firstClass) { //if everyone has the same class
             // If all classes are the same:
             // 1. Keep the time cell in the far right column
             // 2. Center the class cell across the remaining columns
@@ -284,7 +335,6 @@ function nextPage(current) { //takes the current gmara page and adds one עמו�
         "קעג","קעד", "קעה", "קעו","קעז", "קעח","קעט","קפ"
     ];
 
-    console.log("length of pages: "+hebrewLetters.length)
     const match = current.match(/^([\u0590-\u05FF]+)([.:])$/); // match letter + symbol
     if (!match) return current;
 
