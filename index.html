@@ -23,8 +23,7 @@
 
     <div id="clock"></div>
 
-    <script type="module" src="script.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script type="module" src="display-messages.js"></script>
 
     <script type="module">
@@ -40,7 +39,9 @@
         };
 
         const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    </script>
+    </script>    
+    <script type="module" src="script.js"></script>
+
     <!--
     <script src="messages.js"></script>
     -->
