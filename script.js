@@ -1,10 +1,8 @@
 let totalImages = 99;
 let imageTime = 15000; //how many seconds the image displays in millisecond
 
-
-const latitude = 31.914352288683233;   // Place latitude
-const longitude = 34.99863056272468;  // Place longitude
-
+const latitude = 31.914352288683233;   // Place latitude for sun times calculation
+const longitude = 34.99863056272468;  // Place longitude for sun times calculation
 
 let currentPeriod;
 let now = new Date();
@@ -128,29 +126,27 @@ function preloadAndUpdateBackground() {
     currentPeriod = currentRow?.textContent?.trim().replace(/[0-9:]/g, '');
     //console.log("Current Period: " + currentPeriod);
 
-    if (["תפילת שחרית", "תפילת מוסף","תפילת מנחה", "תפילת ערבית", "תפילת מעריב","שחרית", "מוסף", "מנחה", "ערבית", "מעריב"].includes(currentPeriod)) 
+    if (!["תפילת שחרית", "תפילת מוסף","תפילת מנחה", "תפילת ערבית", "תפילת מעריב","שחרית", "מוסף", "מנחה", "ערבית", "מעריב"].includes(currentPeriod)) 
     {
-        //console.log("During prayer: Wont distract with new images.");
-        return; //during prayer times dont distract with images switching
+        //if not during prayer then itll switch between the different images
+        //console.log("Not during prayer: Will update images.");
+        const nextImage = new Image();
+        const imageUrl = `images/background (${imageIndex}).jpg`;
+        nextImage.src = imageUrl;
+
+        nextImage.onload = () => {
+            const nextLayer = currentLayer === 1 ? 2 : 1;
+            const currentDiv = document.getElementById(`bg${currentLayer}`);
+            const nextDiv = document.getElementById(`bg${nextLayer}`);
+
+            nextDiv.style.backgroundImage = `url('${imageUrl}')`;
+            nextDiv.style.zIndex = '-1';
+            currentDiv.style.zIndex = '-2';
+
+            currentLayer = nextLayer;
+            imageIndex = (imageIndex % totalImages) + 1;
+        };
     }
-
-    //console.log("Not during prayer: Will update images.");
-    const nextImage = new Image();
-    const imageUrl = `images/background (${imageIndex}).jpg`;
-    nextImage.src = imageUrl;
-
-    nextImage.onload = () => {
-        const nextLayer = currentLayer === 1 ? 2 : 1;
-        const currentDiv = document.getElementById(`bg${currentLayer}`);
-        const nextDiv = document.getElementById(`bg${nextLayer}`);
-
-        nextDiv.style.backgroundImage = `url('${imageUrl}')`;
-        nextDiv.style.zIndex = '-1';
-        currentDiv.style.zIndex = '-2';
-
-        currentLayer = nextLayer;
-        imageIndex = (imageIndex % totalImages) + 1;
-    };
 }
 preloadAndUpdateBackground();
 setInterval(preloadAndUpdateBackground, imageTime);
@@ -158,49 +154,51 @@ setInterval(preloadAndUpdateBackground, imageTime);
 
 // Function to read the schedule from JSON
 async function readSchedule() {
-    try {
-        const response = await fetch("schedule.json");
-        const data = await response.json();
+    const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+    const now = new Date();
+    const todayIndex = now.getDay();
+    const weekday = daysOfWeek[todayIndex];
+    const dateKey = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
-        if (!Array.isArray(data.grades)) {
-            console.error("Grades not found or not an array:", data.grades);
-            return { headers: [], filteredSchedule: [] }; // ✅ Always return a valid structure
+    const scheduleRef = ref(db, "schedules/" + dateKey);
+    try {
+        const snapshot = await get(scheduleRef);
+        let data;
+
+        if (snapshot.exists()) {
+            data = JSON.parse(snapshot.val()); // Stored as JSON string
+        } else {
+            // Fallback to local schedule.json
+            const response = await fetch("schedule.json");
+            const localData = await response.json();
+
+            if (!localData[weekday]) throw new Error("No fallback data for today");
+
+            data = {
+                grades: localData.grades,
+                [weekday]: localData[weekday]
+            };
+
+            // Upload to Firebase
+            await set(scheduleRef, JSON.stringify(data));
         }
+
+        if (!Array.isArray(data.grades)) throw new Error("Invalid or missing grades");
 
         const grades = data.grades;
-        if (grades.length === 0) {
-            console.error("No grades found in the schedule.");
-            return { headers: [], filteredSchedule: [] };
-        }
+        const todaySchedule = data[weekday];
 
-        // Days of the week in Hebrew
-        const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-        const todayIndex = new Date().getDay();
-        const today = daysOfWeek[todayIndex];
-
-        if (!data[today]) {
-            console.error("No schedule found for today.");
-            return { headers: [], filteredSchedule: [] };
-        }
+        if (!Array.isArray(todaySchedule)) throw new Error("Invalid or missing schedule for today");
 
         const headers = ["שעה", ...grades];
-        const schedule = data[today];
-
-        if (!Array.isArray(schedule) || schedule.length === 0) {
-            console.error("Today's schedule is missing or invalid.");
-            return { headers, filteredSchedule: [] };
-        }
-
-        let filteredSchedule = [];
-        schedule.forEach(({ "שעה": time, ...classes }) => {
-            const classData = [time, ...grades.map(grade => classes[grade] || "")];
-            filteredSchedule.push(classData);
+        const filteredSchedule = todaySchedule.map(({ "שעה": time, ...classes }) => {
+            return [time, ...grades.map(grade => classes[grade] || "")];
         });
 
-        return { headers, filteredSchedule };  // Always returning a valid object
-    } catch (error) {
-        console.error("Error reading schedule:", error);
-        return { headers: [], filteredSchedule: [] }; //Prevents crashes
+        return { headers, filteredSchedule };
+    } catch (err) {
+        console.error("readSchedule failed:", err);
+        return { headers: [], filteredSchedule: [] };
     }
 }
 
@@ -231,43 +229,8 @@ async function loadSchedule() {
     scheduleRows.innerHTML = ""; // Clear previous rows
 
     for (const [rowIndex, row] of filteredSchedule.entries()) {
-        // showing the gmara page for the seder erev
-        const isSederErev = row[1].includes("סדר ערב");
         const firstClass = row.slice(1).every(cell => cell === row[1]);
         
-        if (isSederErev) {
-            const pageRef = ref(db, "sederErev");
-            let currentPage;
-            onValue(pageRef, snapshot => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const today = new Date().toISOString().slice(0, 10);
-                    currentPage = data.page;
-        
-                    if (data.lastUpdated !== today) {
-                        const newPage = nextPage(data.page);
-                        set(pageRef, { page: newPage, lastUpdated: today });
-                        currentPage = newPage;
-                        console.log("Updated the page in firebase to: " + currentPage);
-                    }
-                    console.log("Loading page: " + currentPage);
-        
-                    const rowElem = document.getElementById(`row-${rowIndex}`);
-                    if (rowElem) {
-                        rowElem.innerHTML = `
-                            <div style="grid-column: 1 / span ${row.length - 1}; text-align: center;">
-                                <span dir="rtl">סדר ערב - ${currentPage}</span>
-                            </div>
-                            <div style="grid-column: ${row.length}; text-align: center;">
-                                ${row[0]}
-                            </div>`;
-                    }
-                }
-            }, { onlyOnce: false }); // Keep listening
-            console.log("Loaded page: " + currentPage);
-            //todo maybe add a reoccuring loop that if it didnt manage to load it keeps trying till it manages
-        }
-
         const rowElement = document.createElement("div");
         rowElement.classList.add("schedule-row");
 
@@ -276,11 +239,10 @@ async function loadSchedule() {
             // 1. Keep the time cell in the far right column
             // 2. Center the class cell across the remaining columns
             // Create a single centered class cell across the rest of the columns
+
             const classCell = document.createElement("div");
             classCell.innerHTML = row[1]; // The class name (all cells are the same)
-
             //rowElement.style.boxShadow = "inset 0 -10px 10px -5px rgba(255, 255, 255, 0.2)";
-
             classCell.style.textAlign = "center";
             classCell.style.gridColumn = `1 / span ${row.length - 1}`; // Span across remaining columns
             rowElement.appendChild(classCell);
@@ -293,6 +255,7 @@ async function loadSchedule() {
         } else {
             // If classes are different, add each class as usual, but reverse the content for RTL
             row.reverse().forEach((cellText, cellIndex) => {
+                console.log("\""+cellText+"\"");
                 const cell = document.createElement("div");
                 cell.textContent = cellText;
                 cell.style.textAlign = "center";
@@ -316,9 +279,38 @@ async function loadSchedule() {
     const fakeRow = document.createElement("div");
     fakeRow.classList.add("fake-row");
     document.getElementById("schedule-rows").appendChild(fakeRow);
+
+    updateSederErevRow();    //adding the page to seder erev
 }
 
-function nextPage(current) { //takes the current gmara page and adds one עמוד and then returns it
+//this code will try to read the page to learn in seder erev and add it to that row
+const sederErevRef = ref(db, "sederErev");
+onValue(sederErevRef, snapshot => {
+    updateSederErevRow();
+});
+
+async function updateSederErevRow() {
+    const sederErevRef = ref(db, "sederErev");
+    const snapshot = await get(sederErevRef);
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        let page = data.page;
+        const today = new Date().toISOString().slice(0, 10);
+        if (data.lastUpdated !== today) {
+            page = nextPage(data.page, data.onlyPage);
+            set(sederErevRef, { page, lastUpdated: today, onlyPage: data.onlyPage });
+        }
+        
+        document.querySelectorAll("#schedule-rows .schedule-row div").forEach(div => {
+        if (div.textContent.includes("סדר ערב")) {
+            div.textContent = `סדר ערב - ${page}`;
+            div.style.direction = "rtl";
+        }
+        });
+    }
+}
+
+function nextPage(current, onlyPage) {
     const hebrewLetters = [
         "א","ב","ג","ד","ה","ו","ז","ח","ט","י","יא","יב","יג","יד","טו","טז",
         "יז","יח","יט","כ","כא","כב","כג","כד","כה","כו","כז","כח","כט","ל","לא",
@@ -332,25 +324,37 @@ function nextPage(current) { //takes the current gmara page and adds one עמו�
         "קלד","קלה","קלו","קלז","קלח","קלט","קמ","קמא","קמב","קמג","קמד","קמה","קמו",
         "קמז","קמח","קמט","קנ","קנא","קנב","קנג","קנד","קנה","קנו","קנז","קנח","קנט",
         "קס","קסא","קסב","קסג","קסד","קסה","קסו","קסז","קסח","קסט","קע","קעא","קעב",
-        "קעג","קעד", "קעה", "קעו","קעז", "קעח","קעט","קפ"
+        "קעג","קעד","קעה","קעו","קעז","קעח","קעט","קפ"
     ];
 
-    const match = current.match(/^([\u0590-\u05FF]+)([.:])$/); // match letter + symbol
+    // Extract base letters and optional symbol
+    const match = current.match(/^([\u0590-\u05FF]+)([.:])?$/);
     if (!match) return current;
 
-    const [_, base, symbol] = match;
+    const base = match[1];
+    const symbol = match[2] || null;
     const index = hebrewLetters.indexOf(base);
     if (index === -1) return current;
 
-    // Alternate between . and :
+    // --- MODE A: onlyPage = false (one-side page: no . no :) ---
+    if (!onlyPage) {
+        if (index + 1 < hebrewLetters.length) {
+            return hebrewLetters[index + 1]; // No . or :
+        }
+        return current;
+    }
+
+    // --- MODE B: onlyPage = true (paper: alternate . :) ---
     if (symbol === ".") {
         return `${base}:`;
-    } else {
+    } else if (symbol === ":") {
         if (index + 1 < hebrewLetters.length) {
             return `${hebrewLetters[index + 1]}.`;
-        } else {
-            return current; // End of list
         }
+        return current;
+    } else {
+        // No symbol present, default to starting with "."
+        return `${base}.`;
     }
 }
 
@@ -426,6 +430,6 @@ setInterval(async () => {
         const scheduleContainer = document.getElementById("schedule-container");
         scheduleContainer.scrollTo({ top: 0, behavior: "smooth" });
     }    
-
     updateSchedule();
+
 }, 1000);
