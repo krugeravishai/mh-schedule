@@ -1,4 +1,3 @@
-let totalImages = 99;
 let imageTime = 15000; //how many seconds the image displays in millisecond
 
 const latitude = 31.914352288683233;   // Place latitude for sun times calculation
@@ -28,10 +27,20 @@ const firebaseConfig = {
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const topTextRef = ref(db, "topText");
+const refreshRef = ref(db, "refresh");
 onValue(topTextRef, snapshot => {
     if (true) {
         document.getElementById("top-text").textContent = snapshot.val();
     }
+});
+
+//this code will listen to see if the website needs to reload but wont do it on the first time 
+let startRefreshing = false;
+onValue(refreshRef, snapshot => {
+    if (startRefreshing) {
+        location.reload();
+    }
+    startRefreshing = true;
 });
 
 setInterval(async () => {
@@ -112,44 +121,86 @@ function updateClock() {
     // Update clock display
     clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes} - ${hebrewDay}`; //:${seconds}
 }
-
 setInterval(updateClock, 1000);
 updateClock(); // Run immediately
 
+async function listDriveImages(folderId, apiKey) {
+    const url =
+        `https://www.googleapis.com/drive/v3/files` +
+        `?q='${folderId}'+in+parents+and+mimeType+contains+'image/'` +
+        `&fields=files(id,name,mimeType)` +
+        `&key=${apiKey}`;
 
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
 
-let imageIndex = Math.floor(Math.random() * totalImages) + 1;
+        if (!data.files) return [];
+
+        // Convert Drive file IDs to permanent CDN URLs
+        return data.files.map(f =>
+            `https://lh3.googleusercontent.com/d/${f.id}=w2000`
+        );
+    } catch (err) {
+        console.error("Drive image load error:", err);
+        return [];
+    }
+}
+
+let driveImages = [];
+let imageIndex = 0;
 let currentLayer = 1;
+async function initBackgroundImages() {
+    driveImages = await listDriveImages(
+        "18uZtzDg9Dc5wQV9XgTBINbQXpvUReNBL",
+        "AIzaSyAuEVR8iXJLnjPiclteqgCLmTMk1enF7JQ"
+    );
+
+    if (!driveImages.length) {
+        console.error("No images found in Drive!");
+        return;
+    }
+
+    // random starting point
+    imageIndex = Math.floor(Math.random() * driveImages.length);
+    preloadAndUpdateBackground(); 
+    setInterval(preloadAndUpdateBackground, imageTime);
+}
 
 function preloadAndUpdateBackground() {
     const currentRow = document.querySelector(".current-class");
     currentPeriod = currentRow?.textContent?.trim().replace(/[0-9:]/g, '');
-    //console.log("Current Period: " + currentPeriod);
 
-    if (!["תפילת שחרית", "תפילת מוסף","תפילת מנחה", "תפילת ערבית", "תפילת מעריב","שחרית", "מוסף", "מנחה", "ערבית", "מעריב"].includes(currentPeriod)) 
-    {
-        //if not during prayer then itll switch between the different images
-        //console.log("Not during prayer: Will update images.");
-        const nextImage = new Image();
-        const imageUrl = `images/background (${imageIndex}).jpg`;
-        nextImage.src = imageUrl;
-
-        nextImage.onload = () => {
-            const nextLayer = currentLayer === 1 ? 2 : 1;
-            const currentDiv = document.getElementById(`bg${currentLayer}`);
-            const nextDiv = document.getElementById(`bg${nextLayer}`);
-
-            nextDiv.style.backgroundImage = `url('${imageUrl}')`;
-            nextDiv.style.zIndex = '-1';
-            currentDiv.style.zIndex = '-2';
-
-            currentLayer = nextLayer;
-            imageIndex = (imageIndex % totalImages) + 1;
-        };
+    if ([
+        "תפילת שחרית", "תפילת מוסף","תפילת מנחה",
+        "תפילת ערבית", "תפילת מעריב",
+        "שחרית", "מוסף", "מנחה", "ערבית", "מעריב"
+    ].includes(currentPeriod)) {
+        return; // do not switch images during prayer
     }
+
+    if (!driveImages.length) return;
+
+    const nextImage = new Image();
+    const imageUrl = driveImages[imageIndex];
+    nextImage.src = imageUrl;
+
+    nextImage.onload = () => {
+        const nextLayer = currentLayer === 1 ? 2 : 1;
+        const currentDiv = document.getElementById(`bg${currentLayer}`);
+        const nextDiv = document.getElementById(`bg${nextLayer}`);
+
+        nextDiv.style.backgroundImage = `url('${imageUrl}')`;
+        nextDiv.style.zIndex = '-1';
+        currentDiv.style.zIndex = '-2';
+
+        currentLayer = nextLayer;
+
+        // advance index in a loop
+        imageIndex = (imageIndex + 1) % driveImages.length;
+    };
 }
-preloadAndUpdateBackground();
-setInterval(preloadAndUpdateBackground, imageTime);
+initBackgroundImages();
 
 
 // Function to read the schedule from JSON
@@ -165,8 +216,8 @@ async function readSchedule() {
         const snapshot = await get(scheduleRef);
         let data;
 
-        if (snapshot.exists()) {
-            data = JSON.parse(snapshot.val()); // Stored as JSON string
+        if (snapshot.exists()) { //was if(snapshot.exists()) but for now i never want it to try to get schedule from DB
+            data = snapshot.val(); // Stored as JSON string
         } else {
             // Fallback to local schedule.json
             const response = await fetch("schedule.json");
@@ -180,7 +231,7 @@ async function readSchedule() {
             };
 
             // Upload to Firebase
-            await set(scheduleRef, JSON.stringify(data));
+            await set(scheduleRef, data);
         }
 
         if (!Array.isArray(data.grades)) throw new Error("Invalid or missing grades");
@@ -200,6 +251,7 @@ async function readSchedule() {
         console.error("readSchedule failed:", err);
         return { headers: [], filteredSchedule: [] };
     }
+    
 }
 
 
@@ -282,6 +334,16 @@ async function loadSchedule() {
 
     updateSederErevRow();    //adding the page to seder erev
 }
+
+let checkScheduleUpdate = false;
+const reloadScheduleUpdate = ref(db, "schedules");
+onValue(reloadScheduleUpdate, snapshot => {
+    if (checkScheduleUpdate) {
+        location.reload();
+    }
+    checkScheduleUpdate = true;
+});
+
 
 //this code will try to read the page to learn in seder erev and add it to that row
 const sederErevRef = ref(db, "sederErev");
