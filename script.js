@@ -309,7 +309,7 @@ async function loadSchedule() {
             row.reverse().forEach((cellText, cellIndex) => {
                 console.log("\""+cellText+"\"");
                 const cell = document.createElement("div");
-                cell.textContent = cellText;
+                cell.textContent = cellText || '\u00A0';
                 cell.style.textAlign = "center";
 
                 // Add border to middle cells between classes of different grades
@@ -357,7 +357,8 @@ async function updateSederErevRow() {
     if (snapshot.exists()) {
         const data = snapshot.val();
         let page = data.page;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10); //at 12 it didnt seem to know the right date maybe wrong timezone
+        console.log("lastUpdated - " + data.lastUpdated + ", today - " + today);
         if (data.lastUpdated !== today) {
             page = nextPage(data.page, data.onlyPage);
             set(sederErevRef, { page, lastUpdated: today, onlyPage: data.onlyPage });
@@ -485,12 +486,17 @@ setInterval(async () => {
     const currentDay = now.getDay();
 
     if (currentDay !== lastScheduleDay) {
+        //i used to try to reload the new day by recalling loadSchedule but it wouldnt always work
+        //so its a lot easier to simply reload the page
+        /*
         lastScheduleDay = currentDay;
         await loadSchedule(); // Reload schedule for the new day
     
         // Scroll to the top after loading the new schedule
         const scheduleContainer = document.getElementById("schedule-container");
         scheduleContainer.scrollTo({ top: 0, behavior: "smooth" });
+        */
+        location.reload();
     }    
     updateSchedule();
 
