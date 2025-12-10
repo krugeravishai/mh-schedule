@@ -1,7 +1,19 @@
+//the following variables need to be changed to choice (e.g. imagesTime) or for the specific system (different firebase, google drive etc.)
 let imageTime = 15000; //how many seconds the image displays in millisecond
-
+const folderId = "1LPDVaexjakO6mpB_wnZuu9P4_1FLxgiR"
+const apiKey = "AIzaSyAuEVR8iXJLnjPiclteqgCLmTMk1enF7JQ";
 const latitude = 31.914352288683233;   // Place latitude for sun times calculation
 const longitude = 34.99863056272468;  // Place longitude for sun times calculation
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
+  authDomain: "schedule-mh.firebaseapp.com",
+  projectId: "schedule-mh",
+  storageBucket: "schedule-mh.appspot.com",
+  messagingSenderId: "950949574717",
+  appId: "1:950949574717:web:6cc6dfe51ef405e3cf5254"
+};
 
 let currentPeriod;
 let now = new Date();
@@ -12,18 +24,6 @@ console.log("The current date is: " + now);
 console.log("Sunset is at: " + sunTimes.sunset);
 console.log("Sunrise is at:" + sunTimes.sunrise);
 
-//updating the text at the top of the screen
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
-  authDomain: "schedule-mh.firebaseapp.com",
-  projectId: "schedule-mh",
-  storageBucket: "schedule-mh.appspot.com",
-  messagingSenderId: "950949574717",
-  appId: "1:950949574717:web:6cc6dfe51ef405e3cf5254"
-};
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const topTextRef = ref(db, "topText");
@@ -124,7 +124,7 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock(); // Run immediately
 
-async function listDriveImages(folderId, apiKey) {
+async function listDriveImages() {
     const url =
         `https://www.googleapis.com/drive/v3/files` +
         `?q='${folderId}'+in+parents+and+mimeType+contains+'image/'` +
@@ -151,10 +151,7 @@ let driveImages = [];
 let imageIndex = 0;
 let currentLayer = 1;
 async function initBackgroundImages() {
-    driveImages = await listDriveImages(
-        "18uZtzDg9Dc5wQV9XgTBINbQXpvUReNBL",
-        "AIzaSyAuEVR8iXJLnjPiclteqgCLmTMk1enF7JQ"
-    );
+    driveImages = await listDriveImages();
 
     if (!driveImages.length) {
         console.error("No images found in Drive!");
