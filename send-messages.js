@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-import { get, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { get, set, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 
 function createGridMessage(message, key) {
@@ -197,6 +197,15 @@ window.editMessage = async (key) => {
   // Scroll to the top of the page to make it easier to edit the message
   window.scrollTo(0, 0);
 };
+
+//when the logo is pressed it will make a change to "refresh" in the database, then the main screen knows to refresh.
+document.getElementById("logo").addEventListener('click', function () {
+  const refreshRef = ref(db, "refresh");
+  get(refreshRef).then(snapshot => {
+    set(refreshRef, (snapshot.val() || "") + " ");
+  });
+}
+)
 
 function showToast(message) {
   const toast = document.getElementById("toast");
