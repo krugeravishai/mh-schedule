@@ -336,7 +336,10 @@ let checkScheduleUpdate = false;
 const reloadScheduleUpdate = ref(db, "schedules");
 onValue(reloadScheduleUpdate, snapshot => {
     if (checkScheduleUpdate) {
-        location.reload();
+        //waiting 5 seconds for if there are many changes to make
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
     }
     checkScheduleUpdate = true;
 });
