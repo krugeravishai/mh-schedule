@@ -21,8 +21,6 @@ let now = new Date();
 
 let sunTimes = SunCalc.getTimes(now, latitude, longitude);
 console.log("The current date is: " + now);
-console.log("Sunset is at: " + sunTimes.sunset);
-console.log("Sunrise is at:" + sunTimes.sunrise);
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -45,9 +43,6 @@ onValue(refreshRef, snapshot => {
 
 setInterval(async () => {
     sunTimes = SunCalc.getTimes(now, latitude, longitude);
-    console.log("The current date is: " + now);
-    console.log("Sunset is at: " + sunTimes.sunset);
-    console.log("Sunrise is at:" + sunTimes.sunrise);
 }, 1000 * 60 * 60 * 24); //every day update the new sun times
 
 // const REAL_START = Date.now(); // real time when simulation starts
@@ -75,8 +70,6 @@ function updateClock() {
         weekday: 'long'
     });
 
-    now = new Date();
-
     let hebrewDate = hebrewDateFormatter.format(now).replace(' ב', ' ');
     const hebrewDay = hebrewDayFormatter.format(now);
 
@@ -85,7 +78,6 @@ function updateClock() {
     const sunsetMinutes = sunTimes.sunset.getHours() * 60 + sunTimes.sunset.getMinutes();
 
     if (nowMinutes > sunsetMinutes) {
-        console.log("אור ל");
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
         hebrewDate = hebrewDateFormatter.format(tomorrow).replace(' ב', ' ');
@@ -114,9 +106,11 @@ function updateClock() {
 
     const gematriaHebrewDate = hebrewDate.replace(/,/g, "").replace(/(\d+)/g, match => toGematria(parseInt(match, 10)));
 
+    /*
     if(now.getSeconds() === 0 && now.getMinutes() === 0){
         console.log(hebrewDay+": "+ gematriaHebrewDate); //printing every hour the day and date to see if works right 
     }
+    */
 
     // Update clock display
     clockElement.innerHTML = `${gematriaHebrewDate} - ${hours}:${minutes} - ${hebrewDay}`; //:${seconds}
@@ -203,7 +197,6 @@ initBackgroundImages();
 // Function to read the schedule from JSON
 async function readSchedule() {
     const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-    const now = new Date();
     const todayIndex = now.getDay();
     const weekday = daysOfWeek[todayIndex];
     const dateKey = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
@@ -304,7 +297,7 @@ async function loadSchedule() {
         } else {
             // If classes are different, add each class as usual, but reverse the content for RTL
             row.reverse().forEach((cellText, cellIndex) => {
-                console.log("\""+cellText+"\"");
+                //console.log("\""+cellText+"\"");
                 const cell = document.createElement("div");
                 cell.textContent = cellText || '\u00A0';
                 cell.style.textAlign = "center";
@@ -357,7 +350,7 @@ async function updateSederErevRow() {
     if (snapshot.exists()) {
         const data = snapshot.val();
         let page = data.page;
-        const today = new Date().toISOString().slice(0, 10); //at 12 it didnt seem to know the right date maybe wrong timezone
+        const today = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
         console.log("lastUpdated - " + data.lastUpdated + ", today - " + today);
         if (data.lastUpdated !== today) {
             page = nextPage(data.page, data.onlyPage);
@@ -428,7 +421,6 @@ async function updateSchedule() {
     const { filteredSchedule } = await readSchedule();
     if (filteredSchedule.length === 0) return;
 
-    const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
     let newCurrentIndex = -1;
 
@@ -482,9 +474,9 @@ async function updateSchedule() {
 loadSchedule();
 
 setInterval(async () => {
-    const now = new Date();
+    now = new Date();
     const currentDay = now.getDay();
-
+    
     if (currentDay !== lastScheduleDay) {
         //i used to try to reload the new day by recalling loadSchedule but it wouldnt always work
         //so its a lot easier to simply reload the page
