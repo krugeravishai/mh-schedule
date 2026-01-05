@@ -119,27 +119,40 @@ setInterval(updateClock, 1000);
 updateClock(); // Run immediately
 
 async function listDriveImages() {
-    const url =
-        `https://www.googleapis.com/drive/v3/files` +
-        `?q='${folderId}'+in+parents+and+mimeType+contains+'image/'` +
-        `&fields=files(id,name,mimeType)` +
-        `&key=${apiKey}`;
+    let allFiles = [];
+    let pageToken = null;
 
     try {
-        const response = await fetch(url);
-        const data = await response.json();
+        do {
+            const url =
+                `https://www.googleapis.com/drive/v3/files` +
+                `?q='${folderId}'+in+parents+and+mimeType+contains+'image/'` +
+                `&fields=nextPageToken,files(id,name,mimeType)` +
+                `&pageSize=1000` +
+                (pageToken ? `&pageToken=${pageToken}` : ``) +
+                `&key=${apiKey}`;
 
-        if (!data.files) return [];
+            const response = await fetch(url);
+            const data = await response.json();
 
-        // Convert Drive file IDs to permanent CDN URLs
-        return data.files.map(f =>
+            if (data.files) {
+                allFiles.push(...data.files);
+            }
+
+            pageToken = data.nextPageToken || null;
+
+        } while (pageToken);
+
+        return allFiles.map(f =>
             `https://lh3.googleusercontent.com/d/${f.id}=w2000`
         );
+
     } catch (err) {
         console.error("Drive image load error:", err);
         return [];
     }
 }
+
 
 let driveImages = [];
 let imageIndex = 0;
