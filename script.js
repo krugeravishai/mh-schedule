@@ -226,7 +226,7 @@ async function readSchedule() {
         const snapshot = await get(scheduleRef);
         let data;
 
-        if (snapshot.exists()) { //was if(snapshot.exists()) but for now i never want it to try to get schedule from DB
+        if (snapshot.exists()) {
             data = snapshot.val(); // Stored as JSON string
         } else {
             // Fallback to local schedule.json
@@ -253,9 +253,8 @@ async function readSchedule() {
 
         headers = ["שעה", ...grades];
         filteredSchedule = todaySchedule.map(({ "שעה": time, ...classes }) => {
-            return [time, ...grades.map(grade => classes[grade] || "")];
+            return [time, ...grades.map(grade => classes[grade] || "")]; //i think this just fills null values to empty
         });
-
         return { headers, filteredSchedule };
     } catch (err) {
         console.error("readSchedule failed:", err);
@@ -316,7 +315,7 @@ async function loadSchedule() {
             rowElement.appendChild(timeCell);
         } else {
             // If classes are different, add each class as usual, but reverse the content for RTL
-            row.reverse().forEach((cellText, cellIndex) => {
+            [...row].reverse().forEach((cellText, cellIndex) => { //the [...row] makes it not effect the actual row, but instead change a duplicate
                 //console.log("\""+cellText+"\"");
                 const cell = document.createElement("div");
                 cell.textContent = cellText || '\u00A0';
@@ -453,8 +452,9 @@ function nextPage(current, onlyPage) {
 
 // Function to update the current class and scroll to it
 async function updateSchedule() {
-    await readSchedule();
-    if (filteredSchedule.length === 0) return;
+    if (filteredSchedule.length === 0) {
+        return;
+    };
 
     const currentTime = now.getHours() * 60 + now.getMinutes();
     let newCurrentIndex = -1;
