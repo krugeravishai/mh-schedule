@@ -6,6 +6,8 @@ const latitude = 31.914352288683233;   // Place latitude for sun times calculati
 const longitude = 34.99863056272468;  // Place longitude for sun times calculation
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { runTransaction } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBVk4Y4CW3pB-3_bbuE8rDHXopUnZuFmSw",
   authDomain: "schedule-mh.firebaseapp.com",
@@ -15,6 +17,8 @@ const firebaseConfig = {
   appId: "1:950949574717:web:6cc6dfe51ef405e3cf5254"
 };
 
+let headers = [];
+let filteredSchedule = [];
 let currentPeriod;
 let now = new Date();
 //now.setHours(5);
@@ -209,6 +213,9 @@ initBackgroundImages();
 
 // Function to read the schedule from JSON
 async function readSchedule() {
+    if (headers.length>0 && filteredSchedule.length>0){ //if the schedule was already read then return the previous read
+        return { headers, filteredSchedule };
+    }
     const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
     const todayIndex = now.getDay();
     const weekday = daysOfWeek[todayIndex];
@@ -244,8 +251,8 @@ async function readSchedule() {
 
         if (!Array.isArray(todaySchedule)) throw new Error("Invalid or missing schedule for today");
 
-        const headers = ["שעה", ...grades];
-        const filteredSchedule = todaySchedule.map(({ "שעה": time, ...classes }) => {
+        headers = ["שעה", ...grades];
+        filteredSchedule = todaySchedule.map(({ "שעה": time, ...classes }) => {
             return [time, ...grades.map(grade => classes[grade] || "")];
         });
 
@@ -262,7 +269,7 @@ let lastCurrentPeriod = null;  // Track the last current period for comparison
 let lastScheduleDay = new Date().getDay(); //Track the last day to compare and update day if needed
 // Function to load the schedule initially
 async function loadSchedule() {
-    const { headers, filteredSchedule } = await readSchedule();
+    await readSchedule();
 
     if (filteredSchedule.length === 0) {
         console.log("No schedule data to display.");
@@ -334,8 +341,6 @@ async function loadSchedule() {
     const fakeRow = document.createElement("div");
     fakeRow.classList.add("fake-row");
     document.getElementById("schedule-rows").appendChild(fakeRow);
-
-    updateSederErevRow();    //adding the page to seder erev
 }
 
 let checkScheduleUpdate = false;
@@ -358,26 +363,43 @@ onValue(sederErevRef, snapshot => {
 });
 
 async function updateSederErevRow() {
+    await readSchedule();
+    //Check if "סדר ערב" exists today
+    const sederErevExists = filteredSchedule.some(row =>
+        row.slice(1).some(cell => typeof cell === "string" && cell.includes("סדר ערב"))
+    );
+
+    if (!sederErevExists) {
+        console.log("No סדר ערב today – not advancing page");
+        return; //no seder erev so no need to advance 
+    }
+
     const sederErevRef = ref(db, "sederErev");
+    const today = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+    await runTransaction(sederErevRef, (data) => {
+        if (!data) return data;
+        if (data.lastUpdated === today) return data;
+
+        return {
+            ...data,
+            page: nextPage(data.page, data.onlyPage),
+            lastUpdated: today
+        };
+    });
+
     const snapshot = await get(sederErevRef);
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        let page = data.page;
-        const today = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-        console.log("lastUpdated - " + data.lastUpdated + ", today - " + today);
-        if (data.lastUpdated !== today) {
-            page = nextPage(data.page, data.onlyPage);
-            set(sederErevRef, { page, lastUpdated: today, onlyPage: data.onlyPage });
-        }
-        
+    const page = snapshot.val().page;
+
+    // Updating the סדר ערבs to show the correct page.
         document.querySelectorAll("#schedule-rows .schedule-row div").forEach(div => {
         if (div.textContent.includes("סדר ערב")) {
             div.textContent = `סדר ערב - ${page}`;
             div.style.direction = "rtl";
         }
         });
-    }
 }
+
 
 function nextPage(current, onlyPage) {
     const hebrewLetters = [
@@ -431,7 +453,7 @@ function nextPage(current, onlyPage) {
 
 // Function to update the current class and scroll to it
 async function updateSchedule() {
-    const { filteredSchedule } = await readSchedule();
+    await readSchedule();
     if (filteredSchedule.length === 0) return;
 
     const currentTime = now.getHours() * 60 + now.getMinutes();
