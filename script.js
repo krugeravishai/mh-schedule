@@ -340,8 +340,11 @@ async function loadSchedule() {
     const fakeRow = document.createElement("div");
     fakeRow.classList.add("fake-row");
     document.getElementById("schedule-rows").appendChild(fakeRow);
+
+    updateSederErevRow();
 }
 
+//if a change was made to schedules itll reload after 5 seconds (to give time for many changes)
 let checkScheduleUpdate = false;
 const reloadScheduleUpdate = ref(db, "schedules");
 onValue(reloadScheduleUpdate, snapshot => {
@@ -358,8 +361,19 @@ onValue(reloadScheduleUpdate, snapshot => {
 //this code will try to read the page to learn in seder erev and add it to that row
 const sederErevRef = ref(db, "sederErev");
 onValue(sederErevRef, snapshot => {
-    updateSederErevRow();
+    //if I call updateSederErevRow than it also tries to write and causes looping
+    //instead Ill make here only display whats changed
+    const data = snapshot.val();
+    if (!data) return;
+
+    document.querySelectorAll("#schedule-rows .schedule-row div").forEach(div => {
+        if (div.textContent.includes("סדר ערב")) {
+            div.textContent = `סדר ערב - ${data.page}`;
+            div.style.direction = "rtl";
+        }
+    });
 });
+
 
 async function updateSederErevRow() {
     await readSchedule();
@@ -376,6 +390,9 @@ async function updateSederErevRow() {
     const sederErevRef = ref(db, "sederErev");
     const today = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
+    //the runTransaction prevents several people from writing together
+    //if a changed is noticed (someone changed something first) then itll rerun the code
+    //when its rerun itll reread that the lastUpdated === today and return
     await runTransaction(sederErevRef, (data) => {
         if (!data) return data;
         if (data.lastUpdated === today) return data;
