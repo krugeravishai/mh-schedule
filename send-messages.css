@@ -1,5 +1,5 @@
 .message.grade-everyone {
-  background-color: #648fbd;
+  background-color: #489af1;
 }
 .message.grade-1{
   background-color: #ffbc6f;
@@ -84,6 +84,7 @@ body {
   
   /* Message box styling */
   .message {
+    background-color: #489af1; /*i added this when removing the picking classes and colors*/
     color: black;
     border-radius: 10px;
     padding: 10px;
@@ -115,6 +116,8 @@ body {
   
   .message-text {
     font-size: 18px;
+    white-space: pre-line;
+    
   }
   .message-grid-title {
     margin-top: 60px;
