@@ -13,24 +13,22 @@
   <body>
     <h1>שליחת הודעה:</h1>
     <label>טקסט ההודעה:
-      <textarea id="text" rows="1"></textarea>
+      <textarea id="messageText" rows="2"></textarea>
     </label>
-
+<!--
     <label>שיעור:
       <select id="grade">
         <option value="everyone">כולם</option>
         <option value="1">שיעור א</option>
         <option value="2-3">שיעור ב-ג</option>
         <option value="4-5">שיעור ד-ה</option>
-<!--
         <option value="4">שיעור ד</option>
         <option value="5">שיעור ה</option>
         <option value="6">שיעור ו</option>
         <option value="older">בוגרים</option> 
--->
       </select>
     </label>
-
+-->
     <label>שעת התחלת ההודעה:
       <input type="datetime-local" id="startTime">
     </label>
@@ -46,8 +44,16 @@
 
     <button id="sendButton">שלח הודעה</button>
 
-    <h1 class="message-grid-title">הודעות המופיעות במסך:</h1>
-    <div id="messageGrid" class="message-grid"></div>
+    <div id="currentSection">
+      <h1 class="message-grid-title">הודעות המופיעות כעת:</h1>
+      <div id="currentMessageGrid" class="message-grid"></div>
+    </div>
+
+    <div id="futureSection">
+      <h1 class="message-grid-title">הודעות מתוזמנות:</h1>
+      <div id="futureMessageGrid" class="message-grid"></div>
+    </div>
+
 
     <div id="toast" class="toast"></div>
 
