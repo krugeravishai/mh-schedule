@@ -1,6 +1,10 @@
 //the following variables need to be changed to choice (e.g. imagesTime) or for the specific system (different firebase, google drive etc.)
 let imageTime = 15000; //how many seconds the image displays in millisecond
-const folderId = "1LPDVaexjakO6mpB_wnZuu9P4_1FLxgiR"
+// const folderId = "1LPDVaexjakO6mpB_wnZuu9P4_1FLxgiR"; //the default is that this will show the folder of lots of photos
+// //thats unless i decide (through the DB) to overwrite this with a cover photo folder (which only contains 1 image)
+// const folderIdCover = "1ntXvsVxpRuigc28Kkw2GZWLDlWlvuVIf"
+// let imageFolderToShow = folderId;
+let imageFolder;
 const apiKey = "AIzaSyAuEVR8iXJLnjPiclteqgCLmTMk1enF7JQ";
 const latitude = 31.914352288683233;   // Place latitude for sun times calculation
 const longitude = 34.99863056272468;  // Place longitude for sun times calculation
@@ -37,12 +41,22 @@ onValue(topTextRef, snapshot => {
 });
 
 //this code will listen to see if the website needs to reload but wont do it on the first time 
-let startRefreshing = false;
+let listenForRefreshChange = false;
 onValue(refreshRef, snapshot => {
-    if (startRefreshing) {
+    if (listenForRefreshChange) {
         location.reload();
     }
-    startRefreshing = true;
+    listenForRefreshChange = true;
+});
+
+const coverRef = ref(db, "cover");
+let listenForCoverChange = false;
+onValue(coverRef, snapshot => {
+    if (listenForCoverChange) {
+        location.reload();
+    }
+    listenForCoverChange = true;
+    imageFolder = snapshot.val();
 });
 
 setInterval(async () => {
@@ -123,14 +137,19 @@ setInterval(updateClock, 1000);
 updateClock(); // Run immediately
 
 async function listDriveImages() {
+    await get(coverRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            imageFolder = snapshot.val();
+        }
+    });
+    
     let allFiles = [];
     let pageToken = null;
-
     try {
         do {
             const url =
                 `https://www.googleapis.com/drive/v3/files` +
-                `?q='${folderId}'+in+parents+and+mimeType+contains+'image/'` +
+                `?q='${imageFolder}'+in+parents+and+mimeType+contains+'image/'` +
                 `&fields=nextPageToken,files(id,name,mimeType)` +
                 `&pageSize=1000` +
                 (pageToken ? `&pageToken=${pageToken}` : ``) +
@@ -156,7 +175,6 @@ async function listDriveImages() {
         return [];
     }
 }
-
 
 let driveImages = [];
 let imageIndex = 0;
@@ -213,13 +231,13 @@ initBackgroundImages();
 
 // Function to read the schedule from JSON
 async function readSchedule() {
-    if (headers.length>0 && filteredSchedule.length>0){ //if the schedule was already read then return the previous read
+    if (headers.length>0 && filteredSchedule.length>0){ //if the schedule was already read then return the previous read 
         return { headers, filteredSchedule };
     }
     const daysOfWeek = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
     const todayIndex = now.getDay();
     const weekday = daysOfWeek[todayIndex];
-    const dateKey = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+    const dateKey = getTodayKey(now);
 
     const scheduleRef = ref(db, "schedules/" + dateKey);
     try {
@@ -279,7 +297,7 @@ async function loadSchedule() {
     scheduleHeaders.innerHTML = ""; // Clear existing headers
 
     // Reverse the order of headers for RTL layout
-    headers.reverse().forEach(headerText => {
+    [...headers].reverse().forEach(headerText => {
         const header = document.createElement("div");
         header.textContent = headerText;
         header.style.textAlign = "center";
@@ -345,9 +363,9 @@ async function loadSchedule() {
 }
 
 //if a change was made to schedules itll reload after 5 seconds (to give time for many changes)
-let checkScheduleUpdate = false;
-const reloadScheduleUpdate = ref(db, "schedules");
-onValue(reloadScheduleUpdate, snapshot => {
+let checkScheduleUpdate = false; //gotta make sure it only runs once
+let todayScheduleRef = ref(db, `schedules/${getTodayKey(now)}`);
+onValue(todayScheduleRef, snapshot => {
     if (checkScheduleUpdate) {
         //waiting 5 seconds for if there are many changes to make
         setTimeout(() => {
@@ -388,7 +406,7 @@ async function updateSederErevRow() {
     }
 
     const sederErevRef = ref(db, "sederErev");
-    const today = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+    const today = getTodayKey(now);
 
     //the runTransaction prevents several people from writing together
     //if a changed is noticed (someone changed something first) then itll rerun the code
@@ -545,3 +563,7 @@ setInterval(async () => {
     updateSchedule();
 
 }, 1000);
+
+function getTodayKey(date) {
+    return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+}
