@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="he">
+<head><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></head>
+<meta charset="UTF-8">
+<title>עריכת מערכת</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    direction: rtl;
+    margin:20px;
+}
+
+/* selector row */
+
+.day-select-container{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:12px;
+    margin-bottom:25px;
+}
+
+#day-select{
+    font-size:22px;
+    padding:10px 20px;
+    text-align:center;
+}
+
+#special-date{
+    font-size:20px;
+    padding:8px;
+}
+
+.hidden{
+    display:none;
+}
+
+/* table */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #aaa;
+    padding:6px;
+    text-align:center;
+}
+
+th{
+    background:#eee;
+    cursor:pointer;
+}
+
+td{
+    min-width:120px;
+}
+
+td[contenteditable], th[contenteditable]{
+    background:#fff;
+}
+
+.add-btn{
+    cursor:pointer;
+    background:#d8ffd8;
+    font-weight:bold;
+}
+
+/* save button */
+
+.save-container{
+    margin-top:30px;
+    text-align:center;
+}
+
+button{
+    padding:10px 30px;
+    font-size:18px;
+    cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="day-select-container">
+
+<select id="day-select">
+<option value="ראשון">ראשון</option>
+<option value="שני">שני</option>
+<option value="שלישי">שלישי</option>
+<option value="רביעי">רביעי</option>
+<option value="חמישי">חמישי</option>
+<option value="שישי">שישי</option>
+<option value="שבת">שבת</option>
+<option value="מיוחד">מיוחד</option>
+</select>
+
+<input type="date" id="special-date" class="hidden">
+
+</div>
+
+<table id="schedule-table"></table>
+
+<div class="save-container">
+<button id="save-btn">שמור שינויים</button>
+</div>
+
+<script type="module" src="edit-schedule.js"></script>
+
+<script>
+
+const daySelect = document.getElementById("day-select");
+const dateInput = document.getElementById("special-date");
+
+daySelect.addEventListener("change", () => {
+
+    if(daySelect.value === "מיוחד"){
+        dateInput.classList.remove("hidden");
+    } else {
+        dateInput.classList.add("hidden");
+    }
+
+});
+
+/* force dd/mm/yyyy display */
+dateInput.addEventListener("input", () => {
+    const parts = dateInput.value.split("-");
+    if(parts.length === 3){
+        const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        dateInput.setAttribute("data-display", formatted);
+    }
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</body>
+</html>
