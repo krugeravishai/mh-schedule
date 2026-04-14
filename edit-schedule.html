@@ -85,7 +85,51 @@ button{
 </style>
 </head>
 
+
+    <!--code to run sidemenu-->
+    <script>
+    let adminMenuOpen = false;
+    function toggleAdminMenu(){
+    const menu = document.getElementById("adminMenu");
+    if(adminMenuOpen){
+        menu.style.transform = "translateX(100%)";
+    }else{
+        menu.style.transform = "translateX(0)";
+    }
+    adminMenuOpen = !adminMenuOpen;
+    }
+    </script>
+
 <body>
+    <!--code to add the side menu-->
+    <div id="adminMenuButton"
+    onclick="toggleAdminMenu()"
+    style="position:fixed; top:10px; right:10px; font-size:28px; cursor:pointer; z-index:3000;">
+    ☰
+    </div>
+    <div id="adminMenu"
+    style="
+    position:fixed;
+    top:0;
+    right:0;
+    width:260px;
+    height:100%;
+    background:#ffffff;
+    box-shadow:-2px 0 10px rgba(0,0,0,0.2);
+    padding:20px;
+    transform:translateX(100%);
+    transition:transform 0.25s ease;
+    z-index:2000;
+    ">
+    <h2 style="margin-top:20px;">ניהול</h2>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+    <a href="index.html"><button class="btn-full">🏠הלו"ז</button></a>
+    <a href="send-messages.html"><button class="btn-full">📩שליחת הודעות</button></a>
+    <a href="edit-settings.html"><button class="btn-full">⚙️עריכת הגדרות</button></a>
+    <a href="edit-schedule.html"><button class="btn-full">🗓️עריכת סדר יום</button></a>
+    </div>
+    </div>
+
 
 <div class="day-select-container">
 
