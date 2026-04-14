@@ -239,27 +239,38 @@ async function readSchedule() {
     const weekday = daysOfWeek[todayIndex];
     const dateKey = getTodayKey(now);
 
-    const scheduleRef = ref(db, "schedules/" + dateKey);
+    const specialScheduleRef = ref(db, "specialSchedules/" + dateKey);
+    const dailyScheduleRef = ref(db, "schedules/" + weekday);
     try {
-        const snapshot = await get(scheduleRef);
+        let snapshot = await get(specialScheduleRef);
         let data;
 
         if (snapshot.exists()) {
             data = snapshot.val(); // Stored as JSON string
-        } else {
-            // Fallback to local schedule.json
-            const response = await fetch("schedule.json");
-            const localData = await response.json();
+        }
+        else {
+            //if there isnt a special day, then itll try to find the regular day schedule
+            snapshot = await get(dailyScheduleRef);
 
-            if (!localData[weekday]) throw new Error("No fallback data for today");
+            if (snapshot.exists()) {
+                data = snapshot.val(); // Stored as JSON string
+            }
+            else {
+                //if it cant even get the normal daily schedule from FB itll get it locally.
+                // Fallback to local schedule.json
+                const response = await fetch("schedule.json");
+                const localData = await response.json();
 
-            data = {
-                grades: localData.grades,
-                [weekday]: localData[weekday]
-            };
+                if (!localData[weekday]) throw new Error("No fallback data for today");
 
+                data = {
+                    grades: localData.grades,
+                    [weekday]: localData[weekday]
+                };
+
+            }
             // Upload to Firebase
-            await set(scheduleRef, data);
+            await set(specialScheduleRef, data);
         }
 
         if (!Array.isArray(data.grades)) throw new Error("Invalid or missing grades");
@@ -278,7 +289,6 @@ async function readSchedule() {
         console.error("readSchedule failed:", err);
         return { headers: [], filteredSchedule: [] };
     }
-    
 }
 
 
@@ -364,7 +374,7 @@ async function loadSchedule() {
 
 //if a change was made to schedules itll reload after 5 seconds (to give time for many changes)
 let checkScheduleUpdate = false; //gotta make sure it only runs once
-let todayScheduleRef = ref(db, `schedules/${getTodayKey(now)}`);
+let todayScheduleRef = ref(db, `specialSchedules/${getTodayKey(now)}`);
 onValue(todayScheduleRef, snapshot => {
     if (checkScheduleUpdate) {
         //waiting 5 seconds for if there are many changes to make
