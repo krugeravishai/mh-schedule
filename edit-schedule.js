@@ -176,11 +176,11 @@ async function loadSpecialDates(){
 async function initCalendar(){
 
  await loadSpecialDates();
-
  flatpickr("#special-date",{
 
   dateFormat:"Y-m-d",
   defaultDate:new Date(),
+  disableMobile: true,
 
   onDayCreate:(dObj,dStr,fp,dayElem)=>{
 
