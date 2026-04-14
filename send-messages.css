@@ -1,145 +1,207 @@
 .message.grade-everyone {
-  background-color: #489af1;
+  background-color: #4080b0;
 }
-.message.grade-1{
-  background-color: #ffbc6f;
-}
-.message.grade-2 {
-  background-color: #f6ff76;
-}
-.message.grade-3 {
-  background-color: #a8ff61;
-}
-.message.grade-4 {
-  background-color: #98efee;
-}
-.message.grade-5 {
-  background-color: #fc8ae5;
-}
-.message.grade-6 {
-  background-color: #bfbfbf;
-}
-.message.grade-older {
-  background-color: #ff7e7e;
-}
-.message.grade-2-3 {
-  background-color: #f6ff76;
-}
-.message.grade-4-5 {
-  background-color: #a8ff61;
-}
+.message.grade-1 { background-color: #ffbc6f; }
+.message.grade-2 { background-color: #f6ff76; }
+.message.grade-3 { background-color: #a8ff61; }
+.message.grade-4 { background-color: #98efee; }
+.message.grade-5 { background-color: #fc8ae5; }
+.message.grade-6 { background-color: #bfbfbf; }
+.message.grade-older { background-color: #ff7e7e; }
+.message.grade-2-3 { background-color: #f6ff76; }
+.message.grade-4-5 { background-color: #a8ff61; }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 5px;
-    margin: 0;
-    background-color: #f5f5f5;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 5px;
+  width: 95%;
+  margin: 0 auto;
+  background-color: #f5f5f5;
 }
-  
-  h1 {
-    font-size: 20px;
-    text-align: center;
-  }
-  
-  label {
-    display: block;
-    margin-top: 20px;
-    font-size: 16px;
-  }
-  
-  textarea, select, input[type="datetime-local"] {
-    width: 100%;
-    font-size: 16px;
-    padding: 8px;
-    margin-top: 5px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  
-  button {
-    margin-top: 25px;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    background-color: #155daa;
-    color: white;
-    cursor: pointer;
-  }
-  
-  .chip {
-    display: inline-block;
-    padding: 8px 12px;
-    margin-top: 8px;
-    border-radius: 20px;
-    cursor: pointer;
-    background-color: #ccc;
-    user-select: none;
-  }
-  
-  /* Message box styling */
-  .message {
-    background-color: #489af1; /*i added this when removing the picking classes and colors*/
-    color: black;
-    border-radius: 10px;
-    padding: 10px;
-    padding-top: 0;
-    width: fit-content;
-    font-family: sans-serif;
-    direction: rtl;
-    margin-top: 10px;
-  }
-  
-  .message-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-bottom: 2px;
-  }
-  
-  .message-buttons button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0;
-  }
-  
-  .message-grade {
-    font-weight: bold;
-  }
-  
-  .message-text {
-    font-size: 18px;
-    white-space: pre-line;
-    
-  }
-  .message-grid-title {
-    margin-top: 60px;
-  }
 
-  .toast {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 1000;
-  }
-  .message-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; 
-    margin-top: 20px;
-  }
+h1 {
+  font-size: 20px;
+  text-align: center;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+/* =========================
+   INPUT SYSTEM
+========================= */
+
+.input-full,
+.input-compact,
+textarea,
+select,
+input[type="datetime-local"] {
+  width: 100%;
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+
+
+/* =========================
+   BUTTON SYSTEM
+========================= */
+
+button {
+  border: none;
+  border-radius: 8px;
+  background-color: #2f5c82;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* message page full width buttons */
+.btn-full {
+  margin-top: 25px;
+  padding: 12px;
+  width: 100%;
+}
+
+/* settings side buttons */
+.btn-side {
+  width: 70px;
+  min-width: 70px;
+  padding: 0;
+  margin-top: 0;
+
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   LAYOUT HELPERS
+========================= */
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  margin: 0px;
+}
+
+/* =========================
+   CHIP
+========================= */
+
+.chip {
+  display: inline-block;
+  padding: 8px 12px;
+  margin-top: 8px;
+  border-radius: 20px;
+  cursor: pointer;
+  background-color: #ccc;
+  user-select: none;
+
+  font-size: 16px; /* match inputs */
+}
+
+
+/* =========================
+   MESSAGE BOX
+========================= */
+
+.message {
+  background-color: #4080b0;
+  color: black;
+  border-radius: 10px;
+  padding: 10px;
+  padding-top: 25px;
+  width: fit-content;
+  font-family: sans-serif;
+  direction: rtl;
+}
+
+.message-buttons {
+  display: flex;
+  align-items:center;
+  justify-content:center; 
+  gap: 60px;
+  margin-bottom: 2px;
+}
+
+.message-buttons button{
+  width:auto;
+  margin:0;
+  padding:0;
+  background:none;
+  border:none;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.message-grade {
+  font-weight: bold;
+}
+
+.message-text {
+  margin-top: 10px;
+  font-size: 18px;
+  white-space: pre-line;
+}
+
+.message-grid-title {
+  margin-top: 30px;
+  margin-bottom: 0px;
+}
+
+.message-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+.message-buttons button{
+  width: auto;
+  margin-top: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-buttons img{
+  display: block;
+}
